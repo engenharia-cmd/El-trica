@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>ERP Elétrica Motorhome</title>
+<title>ERP Oficina Elétrica Motorhome</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
@@ -14,7 +14,7 @@ body{
 }
 
 .container{
-    max-width:1100px;
+    max-width:1200px;
     margin:auto;
 }
 
@@ -35,26 +35,10 @@ input, button{
 }
 
 button{
-    border:none;
-    border-radius:6px;
-    cursor:pointer;
-}
-
-.btn{
     background:#2563eb;
     color:#fff;
-}
-
-.btn:hover{ background:#1d4ed8; }
-
-.btn-danger{
-    background:#ef4444;
-    color:#fff;
-}
-
-.btn-gray{
-    background:#6b7280;
-    color:#fff;
+    border:none;
+    border-radius:6px;
 }
 
 .vehicle{
@@ -67,6 +51,18 @@ button{
 
 .vehicle:hover{ background:#eef2ff; }
 
+.status{
+    font-size:12px;
+    padding:3px 8px;
+    border-radius:5px;
+    color:#fff;
+}
+
+.red{ background:#ef4444; }
+.yellow{ background:#f59e0b; }
+.green{ background:#10b981; }
+.gray{ background:#6b7280; }
+
 .checklist{
     background:#f1f5f9;
     padding:10px;
@@ -78,10 +74,16 @@ button{
 
 .hidden{ display:none; }
 
-.year-title{
-    margin-top:20px;
-    font-weight:bold;
-    color:#111827;
+.bar-bg{
+    background:#e5e7eb;
+    height:10px;
+    border-radius:5px;
+    overflow:hidden;
+}
+
+.bar{
+    height:10px;
+    background:#10b981;
 }
 </style>
 </head>
@@ -90,37 +92,29 @@ button{
 
 <div class="container">
 
-<h1>🚐 ERP Elétrica Motorhome</h1>
+<h1>🚐 ERP Oficina Elétrica Motorhome</h1>
 
-<!-- CADASTRO -->
-<div class="card" id="telaCadastro">
-
+<div class="card">
 <h3>Cadastro de Veículo</h3>
-
 <input id="veiculo" placeholder="Nome do veículo">
 <input id="responsavel" placeholder="Responsável">
-
-<button class="btn" onclick="salvar()">Salvar</button>
-
+<button onclick="salvar()">Salvar</button>
 </div>
 
-<!-- LISTA -->
 <div class="card">
-<h3>Veículos por Ano</h3>
+<h3>📊 Progresso da Oficina</h3>
+<div id="painel"></div>
+</div>
+
+<div class="card">
+<h3>Veículos</h3>
 <div id="lista"></div>
 </div>
 
-<!-- DETALHE -->
-<div class="card hidden" id="telaDetalhe">
-
-<h3 id="tituloDetalhe"></h3>
-
-<button class="btn-gray" onclick="voltar()">⬅ Voltar</button>
-<button class="btn" onclick="exportar()">📄 Exportar Relatório</button>
-<button class="btn-danger" onclick="excluirAtual()">🗑 Excluir Veículo</button>
-
+<div class="card hidden" id="detalhe">
+<h3 id="titulo"></h3>
+<button onclick="voltar()">⬅ Voltar</button>
 <div id="checklist"></div>
-
 </div>
 
 </div>
@@ -128,200 +122,228 @@ button{
 <script>
 
 let dados = JSON.parse(localStorage.getItem("erp_motorhome")) || [];
-
 let atual = null;
+
+/* =========================
+CHECKLIST COMPLETO ORIGINAL
+========================= */
+function checklistBase(){
+
+return {
+
+"FASE ELÉTRICA — PASSAGEM DE CABOS C.A.":[
+"Circuito de iluminação fase/fase (amarelo/cinza – 2,5mm)",
+"Circuito de tomadas fase/fase/terra (azul/branco/verde – 2,5mm)"
+],
+
+"FASE ELÉTRICA — PASSAGEM DE CABOS C.C.":[
+"Circuito iluminação 12V (preto/vermelho – 2,5mm)",
+"Cabo aquecedor de passagem (PP 4x1 dupla isolação)",
+"Fiação da placa solar do teto até a central (6mm)",
+"Fiação do ar-condicionado (conforme manual/dimensionamento)",
+"Fiação do toldo e escada (2,5mm)",
+"Tomada 12V base banco motorista (4mm)",
+"Fiação da geladeira (6mm)",
+"LED da pia (2,5mm quando aplicável)",
+"Motor do slide-out até central (6mm)",
+"Válvulas de detritos/servida (PP 2x1 quando aplicável)",
+"Boias de água limpa/suja/detritos (PP 2x0,75)",
+"Estabilizador entrada (3 cabos 2,5mm)",
+"Estabilizador saída (2 cabos 2,5mm)",
+"Circuito iluminação/tomada slide-out (7 cores 2,5mm)",
+"Tomada externa (PP 3x4mm)",
+"Chicote elétrico automotivo (PP 0,5)"
+],
+
+"SISTEMA DE BATERIAS":[
+"Cabo do gerenciador de bateria (2,5mm vermelho)",
+"Cabos entre baterias e barramento central",
+"Cabo de rede do painel até central (CAT6)",
+"Interruptor da usina (2,5mm)"
+],
+
+"SISTEMAS HIDRÁULICOS ELÉTRICOS":[
+"Cabo da bomba de água limpa (6mm)",
+"Cabo 6mm vermelho (1 por bomba)",
+"Cabo do inversor (PP 0,75 botão)"
+],
+
+"FASE 2 — LIGAÇÕES GERAIS":[
+"Ligação de tomadas 220V e 12V",
+"Ligação de lâmpadas e LEDs",
+"Ligação de luz externa (abaixo do toldo)",
+"Ligação da escada",
+"Ligação do toldo",
+"Ligação do slide-out",
+"Ligação do estabilizador",
+"Ligação do sistema de boia",
+"Ligação do ar-condicionado",
+"Ligação da placa aquecedora de passagem",
+"Ligação do LED da pia",
+"Ligação da iluminação de leitura"
+],
+
+"FASE 3 — CENTRAL ELETROELETRÔNICA":[
+"Organização e roteamento de todos os cabos",
+"Fixação dos equipamentos",
+"Ligação da usina",
+"Estabilizador de tensão",
+"Canaletas e passa-fios",
+"Ligação das baterias e barramento CC",
+"Carregador DC-DC",
+"Controlador solar",
+"Chave geral",
+"Bloco de fusíveis",
+"Inversor",
+"Quadro QBC",
+"Detector de gás",
+"Banco elétrico"
+],
+
+"PAINEL DE COMANDO":[
+"Botões das bombas",
+"Botão do inversor",
+"Botão do carregador",
+"Painel de nível de água",
+"Conferência geral final"
+]
+
+};
+
+}
+
+/* ========================= */
 
 function salvar(){
 
-let v = document.getElementById("veiculo").value.trim();
-let r = document.getElementById("responsavel").value.trim();
+let v=document.getElementById("veiculo").value.trim();
+let r=document.getElementById("responsavel").value.trim();
 
-if(!v || !r){
-alert("Preencha tudo");
-return;
-}
+if(!v||!r) return alert("Preencha tudo");
 
-if(dados.find(x => x.veiculo.toLowerCase() === v.toLowerCase())){
-alert("Já existe esse veículo!");
-return;
-}
-
-let ano = new Date().getFullYear();
+if(dados.find(x=>x.veiculo.toLowerCase()===v.toLowerCase()))
+return alert("Já existe");
 
 dados.push({
 veiculo:v,
 responsavel:r,
-ano:ano,
-checklist:getChecklistCompleto(),
-data:new Date().toLocaleString()
+checklist:JSON.parse(JSON.stringify(checklistBase()))
 });
 
-localStorage.setItem("erp_motorhome", JSON.stringify(dados));
-
-document.getElementById("veiculo").value="";
-document.getElementById("responsavel").value="";
+localStorage.setItem("erp_motorhome",JSON.stringify(dados));
 
 render();
 
 }
 
-// abrir veículo
+function progresso(v){
+
+let total=0,done=0;
+
+for(let f in v.checklist){
+v.checklist[f].forEach(i=>{
+total++;
+if(i.done) done++;
+});
+}
+
+return total?Math.round((done/total)*100):0;
+
+}
+
+function status(p){
+if(p===100) return {t:"Concluído",c:"gray"};
+if(p>=81) return {t:"Quase finalizado",c:"green"};
+if(p>=21) return {t:"Em andamento",c:"yellow"};
+return {t:"Iniciado",c:"red"};
+}
+
 function abrir(i){
 
-atual = i;
+atual=i;
+let v=dados[i];
 
-let v = dados[i];
+document.getElementById("detalhe").classList.remove("hidden");
 
-document.getElementById("telaCadastro").classList.add("hidden");
-document.getElementById("telaDetalhe").classList.remove("hidden");
-
-document.getElementById("tituloDetalhe").innerText =
+document.getElementById("titulo").innerText=
 `🚐 ${v.veiculo} - ${v.responsavel}`;
 
-let html = "";
+let html="";
 
-for(let fase in v.checklist){
+for(let f in v.checklist){
 
-html += `<div class="checklist"><b>${fase}</b>`;
+html+=`<div class="checklist"><b>${f}</b>`;
 
-v.checklist[fase].forEach((c,idx)=>{
-html += `
+v.checklist[f].forEach((c,idx)=>{
+html+=`
 <label class="item">
 <input type="checkbox" ${c.done?"checked":""}
-onchange="toggle(${i},'${fase}',${idx})">
+onchange="toggle(${i},'${f}',${idx})">
 ${c.item}
-</label>
-`;
+</label>`;
 });
 
-html += `</div>`;
+html+="</div>";
 }
 
-document.getElementById("checklist").innerHTML = html;
+document.getElementById("checklist").innerHTML=html;
 
 }
 
-// toggle
-function toggle(i,fase,idx){
+function toggle(i,f,idx){
 
-dados[i].checklist[fase][idx].done =
-!dados[i].checklist[fase][idx].done;
+dados[i].checklist[f][idx].done =
+!dados[i].checklist[f][idx].done;
 
-localStorage.setItem("erp_motorhome", JSON.stringify(dados));
+localStorage.setItem("erp_motorhome",JSON.stringify(dados));
 
+render();
 abrir(i);
 
 }
 
-// voltar
 function voltar(){
-document.getElementById("telaCadastro").classList.remove("hidden");
-document.getElementById("telaDetalhe").classList.add("hidden");
+document.getElementById("detalhe").classList.add("hidden");
 render();
 }
 
-// excluir veículo
-function excluirAtual(){
-
-if(confirm("Deseja excluir este veículo?")){
-
-dados.splice(atual,1);
-localStorage.setItem("erp_motorhome", JSON.stringify(dados));
-
-voltar();
-}
-}
-
-// exportar relatório
-function exportar(){
-
-let v = dados[atual];
-
-let texto = `
-RELATÓRIO ELÉTRICO MOTORHOME
-
-Veículo: ${v.veiculo}
-Responsável: ${v.responsavel}
-Ano: ${v.ano}
-Data: ${v.data}
-
------------------------
-
-`;
-
-for(let f in v.checklist){
-texto += `\n${f}\n`;
-
-v.checklist[f].forEach(i=>{
-texto += `[${i.done?"X":" "}] ${i.item}\n`;
-});
-}
-
-let blob = new Blob([texto], {type:"text/plain"});
-let link = document.createElement("a");
-
-link.href = URL.createObjectURL(blob);
-link.download = v.veiculo+"_relatorio.txt";
-link.click();
-
-}
-
-// lista por ano
 function render(){
 
-let div = document.getElementById("lista");
-div.innerHTML="";
+let div=document.getElementById("lista");
+let painel=document.getElementById("painel");
 
-let anos = {};
+div.innerHTML="";
+painel.innerHTML="";
 
 dados.forEach((d,i)=>{
-if(!anos[d.ano]) anos[d.ano]=[];
-anos[d.ano].push({d,i});
-});
 
-for(let ano in anos){
+let p=progresso(d);
+let s=status(p);
 
-div.innerHTML += `<div class="year-title">📅 ${ano}</div>`;
+div.innerHTML+=`
+<div class="vehicle" onclick="abrir(${i})">
+<b>🚐 ${d.veiculo}</b><br>
+<small>👤 ${d.responsavel}</small><br>
+<span class="status ${s.c}">${s.t} - ${p}%</span>
 
-anos[ano].forEach(obj=>{
-div.innerHTML += `
-<div class="vehicle" onclick="abrir(${obj.i})">
-<b>🚐 ${obj.d.veiculo}</b><br>
-<small>👤 ${obj.d.responsavel}</small>
+<div class="bar-bg">
+<div class="bar" style="width:${p}%"></div>
+</div>
+
 </div>
 `;
+
+painel.innerHTML+=`
+<div style="margin-bottom:10px;">
+${d.veiculo}
+<div class="bar-bg">
+<div class="bar" style="width:${p}%"></div>
+</div>
+<small>${p}% concluído</small>
+</div>
+`;
+
 });
-
-}
-
-}
-
-// checklist base completo
-function getChecklistCompleto(){
-
-return {
-"FASE 1 - C.A":[
-{item:"Iluminação fase/fase 2,5mm",done:false},
-{item:"Tomadas fase/fase/terra 2,5mm",done:false}
-],
-
-"FASE 1 - C.C":[
-{item:"Iluminação 12V",done:false},
-{item:"Aquecedor passagem",done:false},
-{item:"Placa solar",done:false},
-{item:"Ar-condicionado",done:false},
-{item:"Toldo e escada",done:false},
-{item:"Geladeira",done:false}
-],
-
-"FASE 3":[
-{item:"Organização cabos",done:false},
-{item:"Baterias",done:false},
-{item:"Inversor",done:false},
-{item:"Fusíveis",done:false}
-]
-
-};
 
 }
 
