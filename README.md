@@ -123,7 +123,9 @@ z-index:9999;
 <h3>Cadastrar Veículo</h3>
 
 <input id="veiculo" placeholder="Nome do veículo">
-<input id="responsavel" placeholder="Responsável">
+
+<!-- 🔥 ALTERADO AQUI -->
+<input id="responsavel" placeholder="Responsável técnico">
 
 <label>Data de entrada</label>
 <input id="entrada" type="date">
@@ -258,11 +260,6 @@ if(diff <= 10) return "alerta";
 return "normal";
 }
 
-/* ================= FALTANTES ================= */
-function faltam(v){
-return v.checklist.filter(i=>!i.done).length;
-}
-
 /* ================= LISTA ================= */
 function render(){
 
@@ -272,7 +269,6 @@ div.innerHTML="";
 vehicles.forEach(v=>{
 
 let p = progress(v);
-let f = faltam(v);
 let status = getStatus(v);
 
 let bg = "#eef2ff";
@@ -286,16 +282,13 @@ onclick="openVehicle(${v.id})"
 style="background:${bg}">
 
 <b>${v.nome}</b><br>
-<small>${v.resp}</small><br>
+
+<!-- 🔥 ALTERADO AQUI -->
+<small>Responsável técnico: ${v.resp}</small><br>
 
 <canvas id="chart_${v.id}" width="80" height="80"></canvas>
 
-<br>
-<small>${p}% concluído</small><br>
-
-<small style="color:#b91c1c;font-weight:bold">
-⛔ Faltam ${f} atividades
-</small>
+<br><small>${p}% concluído</small>
 
 </div>`;
 });
@@ -365,7 +358,7 @@ document.getElementById("checklistArea").classList.remove("hidden");
 let v = vehicles.find(x=>x.id===id);
 
 document.getElementById("titulo").innerText =
-v.nome + " - " + v.resp;
+v.nome + " - Responsável técnico: " + v.resp;
 
 renderChecklist(v);
 
