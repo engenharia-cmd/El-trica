@@ -57,29 +57,15 @@ input,button{
 }
 
 .vehicle{
-    padding:10px;
+    padding:12px;
     border-left:5px solid #2563eb;
-    margin-bottom:8px;
+    margin-bottom:10px;
     cursor:pointer;
-    border-radius:6px;
+    border-radius:8px;
 }
 
 .vehicle:hover{
     filter:brightness(0.97);
-}
-
-.barbg{
-    width:100%;
-    height:10px;
-    background:#e5e7eb;
-    border-radius:5px;
-    margin-top:5px;
-}
-
-.bar{
-    height:10px;
-    background:#10b981;
-    border-radius:5px;
 }
 
 .hidden{display:none;}
@@ -89,12 +75,7 @@ label{
     margin:5px 0;
 }
 
-#percentual{
-    font-weight:bold;
-    margin:8px 0;
-}
-
-/* 🔥 PISCAR ATRASADO */
+/* ALERTA PISCANDO */
 @keyframes piscar {
 0% { opacity: 1; }
 50% { opacity: 0.2; }
@@ -159,7 +140,7 @@ z-index:9999;
 <div id="visao" class="hidden">
 
 <div class="card">
-<h3>Veículos em Produção</h3>
+<h3>Veículos em Produção 2026</h3>
 <div id="lista"></div>
 </div>
 
@@ -184,12 +165,6 @@ border-radius:6px;
 cursor:pointer;">
 🗑 Excluir Veículo
 </button>
-
-<div class="barbg">
-<div id="barra" class="bar" style="width:0%"></div>
-</div>
-
-<div id="percentual"></div>
 
 <div id="checklist"></div>
 
@@ -250,7 +225,7 @@ let s = document.getElementById("saida").value;
 if(!v || !r || !e || !s) return alert("Preencha tudo");
 
 vehicles.push({
-id: Date.now(), // 🔥 ID ÚNICO
+id: Date.now(),
 nome:v,
 resp:r,
 entrada:e,
@@ -283,13 +258,13 @@ if(diff <= 10) return "alerta";
 return "normal";
 }
 
-/* ================= LISTA ================= */
+/* ================= LISTA + GRÁFICOS ================= */
 function render(){
 
 let div = document.getElementById("lista");
 div.innerHTML="";
 
-vehicles.forEach((v,i)=>{
+vehicles.forEach(v=>{
 
 let p = progress(v);
 let status = getStatus(v);
@@ -297,15 +272,8 @@ let status = getStatus(v);
 let bg = "#eef2ff";
 let aviso = "";
 
-if(status === "alerta"){
-bg = "#fef9c3";
-aviso = "⚠️ Prazo próximo";
-}
-
-if(status === "atrasado"){
-bg = "#fee2e2";
-aviso = "🚨 ATRASADO";
-}
+if(status === "alerta") bg = "#fef9c3";
+if(status === "atrasado") bg = "#fee2e2";
 
 div.innerHTML+=`
 <div class="vehicle ${status === "atrasado" ? "blink" : ""}"
@@ -315,18 +283,54 @@ style="background:${bg}">
 <b>${v.nome}</b><br>
 <small>${v.resp}</small><br>
 
-<small>Entrada: ${v.entrada} | Saída: ${v.saida}</small><br>
+<canvas id="chart_${v.id}" width="80" height="80"></canvas>
 
-<small style="font-weight:bold;color:#b91c1c">${aviso}</small>
-
-<div class="barbg">
-<div class="bar" style="width:${p}%"></div>
-</div>
-
-<small>${p}% concluído</small>
+<br><small>${p}% concluído</small>
 </div>`;
 });
 
+setTimeout(drawCharts,100);
+
+}
+
+/* ================= DONUT CHART ================= */
+function drawCharts(){
+
+vehicles.forEach(v=>{
+
+let canvas = document.getElementById("chart_" + v.id);
+if(!canvas) return;
+
+let ctx = canvas.getContext("2d");
+
+let p = progress(v);
+
+ctx.clearRect(0,0,80,80);
+
+let x=40,y=40,r=30;
+
+// fundo
+ctx.beginPath();
+ctx.arc(x,y,r,0,Math.PI*2);
+ctx.strokeStyle="#e5e7eb";
+ctx.lineWidth=8;
+ctx.stroke();
+
+// progresso
+ctx.beginPath();
+ctx.arc(x,y,r,0,(Math.PI*2)*(p/100));
+ctx.strokeStyle = p===100 ? "#10b981" : "#2563eb";
+ctx.lineWidth=8;
+ctx.stroke();
+
+// texto
+ctx.fillStyle="#111827";
+ctx.font="bold 12px Arial";
+ctx.textAlign="center";
+ctx.textBaseline="middle";
+ctx.fillText(p+"%",x,y);
+
+});
 }
 
 /* ================= PROGRESSO ================= */
@@ -339,7 +343,7 @@ return Math.round((done/total)*100);
 
 }
 
-/* ================= ABRIR CHECKLIST ================= */
+/* ================= ABRIR ================= */
 function openVehicle(id){
 
 atual = id;
@@ -347,15 +351,12 @@ atual = id;
 document.getElementById("visao").classList.add("hidden");
 document.getElementById("checklistArea").classList.remove("hidden");
 
-let v = vehicles.find(x => x.id === id);
-
-if(!v) return;
+let v = vehicles.find(x=>x.id===id);
 
 document.getElementById("titulo").innerText =
 v.nome + " - " + v.resp;
 
 renderChecklist(v);
-updateBar(v);
 
 }
 
@@ -372,9 +373,7 @@ div.innerHTML+=`
 <input type="checkbox" ${c.done?"checked":""}
 onchange="toggle(${i})">
 ${c.item}
-</label>
-`;
-
+</label>`;
 });
 
 }
@@ -382,41 +381,25 @@ ${c.item}
 /* ================= TOGGLE ================= */
 function toggle(i){
 
-let v = vehicles.find(x => x.id === atual);
+let v = vehicles.find(x=>x.id===atual);
 
 v.checklist[i].done = !v.checklist[i].done;
 
 save();
 
-renderChecklist(v);
 render();
-updateBar(v);
-
-}
-
-/* ================= BARRA ================= */
-function updateBar(v){
-
-let p = progress(v);
-
-document.getElementById("barra").style.width = p + "%";
-document.getElementById("percentual").innerText =
-p + "% concluído";
-
 }
 
 /* ================= EXCLUIR ================= */
 function deleteVehicle(){
 
-if(atual === null) return;
-
 if(!confirm("Deseja excluir este veículo?")) return;
 
-vehicles = vehicles.filter(v => v.id !== atual);
+vehicles = vehicles.filter(v=>v.id!==atual);
 
 save();
 
-atual = null;
+atual=null;
 
 document.getElementById("checklistArea").classList.add("hidden");
 document.getElementById("visao").classList.remove("hidden");
@@ -436,16 +419,14 @@ render();
 
 }
 
-/* ================= NOTIFICAÇÃO ================= */
+/* ================= NOTIFY ================= */
 function notify(msg){
 
-let t = document.getElementById("toast");
-t.innerText = msg;
-t.style.display = "block";
+let t=document.getElementById("toast");
+t.innerText=msg;
+t.style.display="block";
 
-setTimeout(()=>{
-t.style.display = "none";
-},2500);
+setTimeout(()=>t.style.display="none",2500);
 
 }
 
