@@ -2,120 +2,109 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Elétrica Globe - Painel Industrial</title>
+<title>Controle Elétrica Globe</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-body{margin:0;font-family:Arial;background:#0f172a;color:#fff;}
+body{
+    font-family: Arial;
+    margin:0;
+    background:#f4f6f9;
+}
 
-header{background:#111827;padding:15px;font-size:20px;font-weight:bold;}
+header{
+    background:#111827;
+    color:white;
+    padding:15px;
+    font-size:20px;
+}
 
-.menu{display:flex;background:#111827;}
-.menu button{flex:1;padding:12px;border:none;background:#111827;color:#fff;cursor:pointer;}
-.menu button:hover{background:#1f2937;}
-
-.container{padding:15px;}
+.container{
+    padding:15px;
+}
 
 .card{
-background:#1e293b;padding:15px;border-radius:10px;margin-bottom:10px;
+    background:white;
+    padding:15px;
+    border-radius:10px;
+    margin-bottom:10px;
+    box-shadow:0 2px 6px rgba(0,0,0,0.1);
+}
+
+input,button{
+    width:100%;
+    padding:10px;
+    margin:5px 0;
 }
 
 .vehicle{
-background:#1e293b;padding:10px;margin:8px 0;
-border-left:5px solid #2563eb;cursor:pointer;
+    background:#eef2ff;
+    padding:10px;
+    border-left:5px solid #2563eb;
+    margin-bottom:8px;
+    cursor:pointer;
 }
 
-.barbg{height:10px;background:#334155;border-radius:5px;}
-.bar{height:10px;background:#10b981;height:10px;}
-
-.alert{
-background:#ef4444;padding:10px;margin:10px 0;
-border-radius:8px;font-weight:bold;animation:pulse 1s infinite;
+.vehicle:hover{
+    background:#e0e7ff;
 }
 
-@keyframes pulse{0%{opacity:1}50%{opacity:.5}100%{opacity:1}}
+.barbg{
+    width:100%;
+    height:10px;
+    background:#e5e7eb;
+    border-radius:5px;
+    margin-top:5px;
+}
+
+.bar{
+    height:10px;
+    background:#10b981;
+    border-radius:5px;
+}
 
 .hidden{display:none;}
 
-input,select,button{width:100%;padding:10px;margin:5px 0;}
+label{
+    display:block;
+    margin:5px 0;
+}
 </style>
 </head>
 
 <body>
 
-<header>🏭 Elétrica Globe - Painel Industrial</header>
-
-<div class="menu">
-<button onclick="show('dash')">📊 Dashboard</button>
-<button onclick="show('carros')">🚐 Carros</button>
-<button onclick="show('alertas')">🚨 Alertas</button>
-<button onclick="show('horas')">⏱ Horas</button>
-</div>
+<header>⚡ Controle Elétrica Globe</header>
 
 <div class="container">
 
-<!-- DASH -->
-<div id="dash">
-
+<!-- CADASTRO -->
 <div class="card">
-<h3>Resumo</h3>
-<div id="resumo"></div>
+<h3>Cadastrar Veículo</h3>
+<input id="veiculo" placeholder="Nome do veículo">
+<input id="responsavel" placeholder="Responsável">
+<button onclick="addVehicle()">Salvar</button>
 </div>
 
-</div>
-
-<!-- CARROS -->
-<div id="carros" class="hidden">
-
+<!-- LISTA -->
 <div class="card">
-<h3>Cadastro</h3>
-<input id="v">
-<input id="r">
-<input id="e" type="date">
-<input id="s" type="date">
-<button onclick="add()">Salvar</button>
-</div>
-
+<h3>Veículos</h3>
 <div id="lista"></div>
 </div>
 
 <!-- CHECKLIST -->
-<div id="checklistView" class="hidden">
+<div id="checklistArea" class="hidden">
+
 <div class="card">
 <h3 id="titulo"></h3>
-<button onclick="back()">⬅ Voltar</button>
-<button onclick="del()">🗑 Excluir</button>
+<button onclick="voltar()">⬅ Voltar</button>
+
+<div class="barbg">
+<div id="barra" class="bar" style="width:0%"></div>
+</div>
+
 <div id="checklist"></div>
 </div>
-</div>
-
-<!-- ALERTAS -->
-<div id="alertas" class="hidden">
-<div class="card">
-<h3>🚨 Atrasos</h3>
-<div id="listaAlertas"></div>
-</div>
-</div>
-
-<!-- HORAS -->
-<div id="horas" class="hidden">
-
-<div class="card">
-<h3>Horas</h3>
-
-<select id="sel"></select>
-<select id="ele">
-<option>Eletricista 1</option>
-<option>Eletricista 2</option>
-<option>Eletricista 3</option>
-</select>
-
-<input id="h" type="number">
-<button onclick="addH()">Salvar</button>
-
-</div>
-
-<div id="hist"></div>
 
 </div>
 
@@ -123,227 +112,163 @@ input,select,button{width:100%;padding:10px;margin:5px 0;}
 
 <script>
 
-let carros = JSON.parse(localStorage.getItem("carros")) || [];
-let horas = JSON.parse(localStorage.getItem("horas")) || [];
-
+let vehicles = JSON.parse(localStorage.getItem("vehicles")) || [];
 let atual = null;
 
+/* ================= CHECKLIST BASE ================= */
 function baseChecklist(){
-
-return {
-
-"FASE 1 - CA":[
-"Circuito iluminação CA",
-"Circuito tomadas CA"
-],
-
-"FASE 1 - CC":[
+return [
 "Iluminação 12V",
-"Placa solar",
-"Ar-condicionado",
-"Toldo e escada",
-"Geladeira"
-"bbbbbbbbbbbbbb"
-],
-
-"FASE 2":[
 "Tomadas 220V",
-"Lâmpadas",
-"Slide-out",
-"Boias água"
-],
-
-"FASE 3":[
+"Sistema de baterias",
+"Placa solar",
 "Central elétrica",
 "Inversor",
-"Fusíveis",
-"Quadro QBC"
-]
-
-};
-
+"Bombas de água",
+"Teste final"
+];
 }
 
-function add(){
+/* ================= SALVAR ================= */
+function save(){
+localStorage.setItem("vehicles",JSON.stringify(vehicles));
+}
 
-carros.push({
-v:v.value,
-r:r.value,
-e:e.value,
-s:s.value,
-c:JSON.parse(JSON.stringify(baseChecklist()))
+/* ================= CADASTRAR ================= */
+function addVehicle(){
+
+let v = document.getElementById("veiculo").value.trim();
+let r = document.getElementById("responsavel").value.trim();
+
+if(!v || !r) return alert("Preencha tudo");
+
+vehicles.push({
+nome:v,
+resp:r,
+checklist:baseChecklist().map(i=>({item:i,done:false}))
 });
 
-save();render();
+save();
+render();
 
+document.getElementById("veiculo").value="";
+document.getElementById("responsavel").value="";
 }
 
-function progresso(c){
-
-let t=0,d=0;
-
-for(let f in c.c){
-c.c[f].forEach(i=>{
-t++;
-if(i.done)d++;
-});
-}
-
-return t?Math.round(d/t*100):0;
-
-}
-
-function alerta(c){
-
-let hoje=new Date();
-let s=new Date(c.s);
-let d=Math.ceil((s-hoje)/86400000);
-
-if(d<0)return"red";
-if(d<=2)return"yellow";
-return"green";
-
-}
-
+/* ================= RENDER LISTA ================= */
 function render(){
 
-let list=document.getElementById("lista");
-let al=document.getElementById("listaAlertas");
-let res=document.getElementById("resumo");
+let div = document.getElementById("lista");
+div.innerHTML="";
 
-list.innerHTML="";
-al.innerHTML="";
-res.innerHTML="";
+vehicles.forEach((v,i)=>{
 
-let total=carros.length;
-let atras=0;
-let media=0;
+let p = progress(v);
 
-carros.forEach((c,i)=>{
+div.innerHTML+=`
+<div class="vehicle" onclick="openVehicle(${i})">
+<b>${v.nome}</b><br>
+<small>${v.resp}</small>
 
-let p=progresso(c);
-let st=alerta(c);
-media+=p;
+<div class="barbg">
+<div class="bar" style="width:${p}%"></div>
+</div>
 
-if(st==="red")atras++;
-
-list.innerHTML+=`
-<div class="vehicle" onclick="openC(${i})">
-<b>${c.v}</b><br>
-<small>${c.r}</small><br>
-<div class="barbg"><div class="bar" style="width:${p}%"></div></div>
-<small>${p}%</small>
+<small>${p}% concluído</small>
 </div>`;
-
-if(st==="red"){
-al.innerHTML+=`<div class="alert">🚨 ${c.v} ATRASADO</div>`;
-}
-
 });
 
-res.innerHTML=`
-Total: ${total}<br>
-Atrasados: ${atras}<br>
-Média: ${total?Math.round(media/total):0}%`;
+}
+
+/* ================= PROGRESSO ================= */
+function progress(v){
+
+let total = v.checklist.length;
+let done = v.checklist.filter(i=>i.done).length;
+
+return Math.round((done/total)*100);
 
 }
 
-function openC(i){
+/* ================= ABRIR CHECKLIST ================= */
+function openVehicle(i){
 
-atual=i;
+atual = i;
 
-let c=carros[i];
+document.getElementById("checklistArea").classList.remove("hidden");
 
-document.getElementById("carros").classList.add("hidden");
-document.getElementById("checklistView").classList.remove("hidden");
+document.getElementById("lista").parentElement.classList.add("hidden");
 
-document.getElementById("titulo").innerText=
-`🚐 ${c.v}`;
+let v = vehicles[i];
 
-let html="";
+document.getElementById("titulo").innerText =
+v.nome + " - " + v.resp;
 
-for(let f in c.c){
+renderChecklist();
 
-html+=`<div class="card"><b>${f}</b>`;
+}
 
-c.c[f].forEach((i2,idx)=>{
+/* ================= CHECKLIST RENDER ================= */
+function renderChecklist(){
 
-html+=`
+let v = vehicles[atual];
+
+let div = document.getElementById("checklist");
+div.innerHTML="";
+
+v.checklist.forEach((c,i)=>{
+
+div.innerHTML+=`
 <label>
-<input type="checkbox" ${i2.done?"checked":""}
-onchange="toggle('${f}',${idx})">
-${i2}
-</label><br>
+<input type="checkbox" ${c.done?"checked":""}
+onchange="toggle(${i})">
+${c.item}
+</label>
 `;
 
 });
 
-html+="</div>";
+updateBar();
 
 }
 
-document.getElementById("checklist").innerHTML=html;
+/* ================= TOGGLE ================= */
+function toggle(i){
 
-}
-
-function toggle(f,idx){
-
-carros[atual].c[f][idx].done =
-!carros[atual].c[f][idx].done;
+vehicles[atual].checklist[i].done =
+!vehicles[atual].checklist[i].done;
 
 save();
-openC(atual);
+
+renderChecklist();
+
 render();
 
 }
 
-function del(){
+/* ================= BARRA ================= */
+function updateBar(){
 
-if(confirm("Excluir?")){
-carros.splice(atual,1);
-save();
-back();
-}
+let v = vehicles[atual];
 
-}
+let p = progress(v);
 
-function back(){
-document.getElementById("checklistView").classList.add("hidden");
-document.getElementById("carros").classList.remove("hidden");
-render();
-}
-
-function addH(){
-
-horas.push({
-carro:sel.value,
-ele:ele.value,
-h:h.value,
-d:new Date().toLocaleDateString(),
-t:new Date().toLocaleTimeString()
-});
-
-save();
+document.getElementById("barra").style.width = p+"%";
 
 }
 
-function save(){
-localStorage.setItem("carros",JSON.stringify(carros));
-localStorage.setItem("horas",JSON.stringify(horas));
-}
+/* ================= VOLTAR ================= */
+function voltar(){
 
-function show(t){
+document.getElementById("checklistArea").classList.add("hidden");
 
-["dash","carros","alertas","horas","checklistView"].forEach(x=>{
-document.getElementById(x).classList.add("hidden");
-});
-
-document.getElementById(t).classList.remove("hidden");
+document.getElementById("lista").parentElement.classList.remove("hidden");
 
 render();
+
 }
 
-show("dash");
+render();
 
 </script>
 
