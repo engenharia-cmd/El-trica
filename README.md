@@ -2,23 +2,44 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>ERP Oficina Elétrica Motorhome</title>
+<title>Elétrica Globe ERP</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
 body{
-    font-family: Arial;
-    background:#f4f6f9;
     margin:0;
-    padding:20px;
+    font-family:Arial;
+    background:#f4f6f9;
+}
+
+header{
+    background:#111827;
+    color:#fff;
+    padding:15px;
+    font-size:20px;
+}
+
+.menu{
+    display:flex;
+    background:#1f2937;
+}
+
+.menu button{
+    flex:1;
+    padding:12px;
+    border:none;
+    background:#1f2937;
+    color:#fff;
+    cursor:pointer;
+}
+
+.menu button:hover{
+    background:#374151;
 }
 
 .container{
-    max-width:1200px;
-    margin:auto;
+    padding:20px;
 }
-
-h1{ color:#1f2937; }
 
 .card{
     background:#fff;
@@ -28,326 +49,285 @@ h1{ color:#1f2937; }
     box-shadow:0 2px 6px rgba(0,0,0,0.1);
 }
 
-input, button{
+input, select, button{
     width:100%;
     padding:10px;
     margin:5px 0;
 }
 
-button{
-    background:#2563eb;
-    color:#fff;
-    border:none;
-    border-radius:6px;
-}
-
 .vehicle{
-    padding:12px;
-    margin:8px 0;
-    background:#f9fafb;
+    padding:10px;
     border-left:5px solid #2563eb;
+    background:#f9fafb;
+    margin:8px 0;
     cursor:pointer;
 }
 
-.vehicle:hover{ background:#eef2ff; }
-
-.status{
-    font-size:12px;
-    padding:3px 8px;
-    border-radius:5px;
-    color:#fff;
+.vehicle:hover{
+    background:#eef2ff;
 }
 
-.red{ background:#ef4444; }
-.yellow{ background:#f59e0b; }
-.green{ background:#10b981; }
-.gray{ background:#6b7280; }
+.hidden{display:none;}
 
 .checklist{
     background:#f1f5f9;
     padding:10px;
-    border-radius:8px;
     margin-top:10px;
+    border-radius:8px;
 }
 
-.item{ display:block; margin:5px 0; }
+.item{display:block;margin:5px 0;}
 
-.hidden{ display:none; }
-
-.bar-bg{
-    background:#e5e7eb;
-    height:10px;
+.barbg{height:10px;background:#e5e7eb;border-radius:5px;}
+.bar{height:10px;background:#10b981;border-radius:5px;}
+.status{
+    font-size:12px;
+    padding:3px 8px;
+    color:#fff;
     border-radius:5px;
-    overflow:hidden;
 }
-
-.bar{
-    height:10px;
-    background:#10b981;
-}
+.red{background:#ef4444;}
+.yellow{background:#f59e0b;}
+.green{background:#10b981;}
+.gray{background:#6b7280;}
 </style>
 </head>
 
 <body>
 
+<header>⚡ Elétrica Globe</header>
+
+<div class="menu">
+<button onclick="show('carros')">🚐 Carros</button>
+<button onclick="show('horas')">⏱ Horas</button>
+</div>
+
 <div class="container">
 
-<h1>🚐 ERP Oficina Elétrica Motorhome</h1>
+<!-- CARROS -->
+<div id="carros">
 
 <div class="card">
-<h3>Cadastro de Veículo</h3>
+<h3>Cadastrar Veículo</h3>
 <input id="veiculo" placeholder="Nome do veículo">
 <input id="responsavel" placeholder="Responsável">
-<button onclick="salvar()">Salvar</button>
+<button onclick="addCar()">Salvar</button>
 </div>
 
 <div class="card">
-<h3>📊 Progresso da Oficina</h3>
-<div id="painel"></div>
-</div>
-
-<div class="card">
-<h3>Veículos</h3>
+<h3>Lista de Carros</h3>
 <div id="lista"></div>
 </div>
 
-<div class="card hidden" id="detalhe">
-<h3 id="titulo"></h3>
-<button onclick="voltar()">⬅ Voltar</button>
-<div id="checklist"></div>
+</div>
+
+<!-- HORAS -->
+<div id="horas" class="hidden">
+
+<div class="card">
+<h3>Lançar Horas</h3>
+
+<select id="carroSelect"></select>
+
+<select id="eletricista">
+<option>Eletricista 1</option>
+<option>Eletricista 2</option>
+<option>Eletricista 3</option>
+</select>
+
+<input id="horasInput" type="number" placeholder="Horas trabalhadas">
+
+<button onclick="addHoras()">Salvar</button>
+</div>
+
+<div class="card">
+<h3>Resumo Horas</h3>
+<div id="resumoHoras"></div>
+</div>
+
 </div>
 
 </div>
 
 <script>
 
-let dados = JSON.parse(localStorage.getItem("erp_motorhome")) || [];
+let carros = JSON.parse(localStorage.getItem("globe_carros")) || [];
+let horas = JSON.parse(localStorage.getItem("globe_horas")) || [];
 let atual = null;
 
-/* =========================
-CHECKLIST COMPLETO ORIGINAL
-========================= */
-function checklistBase(){
+/* ================= MENU ================= */
+function show(t){
+document.getElementById("carros").classList.add("hidden");
+document.getElementById("horas").classList.add("hidden");
+document.getElementById(t).classList.remove("hidden");
 
-return {
-
-"FASE ELÉTRICA — PASSAGEM DE CABOS C.A.":[
-"Circuito de iluminação fase/fase (amarelo/cinza – 2,5mm)",
-"Circuito de tomadas fase/fase/terra (azul/branco/verde – 2,5mm)"
-],
-
-"FASE ELÉTRICA — PASSAGEM DE CABOS C.C.":[
-"Circuito iluminação 12V (preto/vermelho – 2,5mm)",
-"Cabo aquecedor de passagem (PP 4x1 dupla isolação)",
-"Fiação da placa solar do teto até a central (6mm)",
-"Fiação do ar-condicionado (conforme manual/dimensionamento)",
-"Fiação do toldo e escada (2,5mm)",
-"Tomada 12V base banco motorista (4mm)",
-"Fiação da geladeira (6mm)",
-"LED da pia (2,5mm quando aplicável)",
-"Motor do slide-out até central (6mm)",
-"Válvulas de detritos/servida (PP 2x1 quando aplicável)",
-"Boias de água limpa/suja/detritos (PP 2x0,75)",
-"Estabilizador entrada (3 cabos 2,5mm)",
-"Estabilizador saída (2 cabos 2,5mm)",
-"Circuito iluminação/tomada slide-out (7 cores 2,5mm)",
-"Tomada externa (PP 3x4mm)",
-"Chicote elétrico automotivo (PP 0,5)"
-],
-
-"SISTEMA DE BATERIAS":[
-"Cabo do gerenciador de bateria (2,5mm vermelho)",
-"Cabos entre baterias e barramento central",
-"Cabo de rede do painel até central (CAT6)",
-"Interruptor da usina (2,5mm)"
-],
-
-"SISTEMAS HIDRÁULICOS ELÉTRICOS":[
-"Cabo da bomba de água limpa (6mm)",
-"Cabo 6mm vermelho (1 por bomba)",
-"Cabo do inversor (PP 0,75 botão)"
-],
-
-"FASE 2 — LIGAÇÕES GERAIS":[
-"Ligação de tomadas 220V e 12V",
-"Ligação de lâmpadas e LEDs",
-"Ligação de luz externa (abaixo do toldo)",
-"Ligação da escada",
-"Ligação do toldo",
-"Ligação do slide-out",
-"Ligação do estabilizador",
-"Ligação do sistema de boia",
-"Ligação do ar-condicionado",
-"Ligação da placa aquecedora de passagem",
-"Ligação do LED da pia",
-"Ligação da iluminação de leitura"
-],
-
-"FASE 3 — CENTRAL ELETROELETRÔNICA":[
-"Organização e roteamento de todos os cabos",
-"Fixação dos equipamentos",
-"Ligação da usina",
-"Estabilizador de tensão",
-"Canaletas e passa-fios",
-"Ligação das baterias e barramento CC",
-"Carregador DC-DC",
-"Controlador solar",
-"Chave geral",
-"Bloco de fusíveis",
-"Inversor",
-"Quadro QBC",
-"Detector de gás",
-"Banco elétrico"
-],
-
-"PAINEL DE COMANDO":[
-"Botões das bombas",
-"Botão do inversor",
-"Botão do carregador",
-"Painel de nível de água",
-"Conferência geral final"
-]
-
-};
-
+if(t==="horas") atualizarSelect();
+renderHoras();
+renderCarros();
 }
 
-/* ========================= */
-
-function salvar(){
+/* ================= CARROS ================= */
+function addCar(){
 
 let v=document.getElementById("veiculo").value.trim();
 let r=document.getElementById("responsavel").value.trim();
 
 if(!v||!r) return alert("Preencha tudo");
 
-if(dados.find(x=>x.veiculo.toLowerCase()===v.toLowerCase()))
+if(carros.find(c=>c.veiculo.toLowerCase()===v.toLowerCase()))
 return alert("Já existe");
 
-dados.push({
+carros.push({
 veiculo:v,
 responsavel:r,
-checklist:JSON.parse(JSON.stringify(checklistBase()))
+checklist:getChecklist()
 });
 
-localStorage.setItem("erp_motorhome",JSON.stringify(dados));
+localStorage.setItem("globe_carros",JSON.stringify(carros));
 
-render();
+document.getElementById("veiculo").value="";
+document.getElementById("responsavel").value="";
 
+renderCarros();
 }
 
-function progresso(v){
-
-let total=0,done=0;
-
-for(let f in v.checklist){
-v.checklist[f].forEach(i=>{
-total++;
-if(i.done) done++;
-});
-}
-
-return total?Math.round((done/total)*100):0;
-
-}
-
-function status(p){
-if(p===100) return {t:"Concluído",c:"gray"};
-if(p>=81) return {t:"Quase finalizado",c:"green"};
-if(p>=21) return {t:"Em andamento",c:"yellow"};
-return {t:"Iniciado",c:"red"};
-}
-
-function abrir(i){
-
-atual=i;
-let v=dados[i];
-
-document.getElementById("detalhe").classList.remove("hidden");
-
-document.getElementById("titulo").innerText=
-`🚐 ${v.veiculo} - ${v.responsavel}`;
-
-let html="";
-
-for(let f in v.checklist){
-
-html+=`<div class="checklist"><b>${f}</b>`;
-
-v.checklist[f].forEach((c,idx)=>{
-html+=`
-<label class="item">
-<input type="checkbox" ${c.done?"checked":""}
-onchange="toggle(${i},'${f}',${idx})">
-${c.item}
-</label>`;
-});
-
-html+="</div>";
-}
-
-document.getElementById("checklist").innerHTML=html;
-
-}
-
-function toggle(i,f,idx){
-
-dados[i].checklist[f][idx].done =
-!dados[i].checklist[f][idx].done;
-
-localStorage.setItem("erp_motorhome",JSON.stringify(dados));
-
-render();
-abrir(i);
-
-}
-
-function voltar(){
-document.getElementById("detalhe").classList.add("hidden");
-render();
-}
-
-function render(){
+function renderCarros(){
 
 let div=document.getElementById("lista");
-let painel=document.getElementById("painel");
-
 div.innerHTML="";
-painel.innerHTML="";
 
-dados.forEach((d,i)=>{
+carros.forEach((c,i)=>{
 
-let p=progresso(d);
-let s=status(p);
+let p=progresso(c);
 
 div.innerHTML+=`
-<div class="vehicle" onclick="abrir(${i})">
-<b>🚐 ${d.veiculo}</b><br>
-<small>👤 ${d.responsavel}</small><br>
-<span class="status ${s.c}">${s.t} - ${p}%</span>
+<div class="vehicle">
+<b>🚐 ${c.veiculo}</b><br>
+<small>${c.responsavel}</small><br>
 
-<div class="bar-bg">
+<div class="barbg">
 <div class="bar" style="width:${p}%"></div>
 </div>
 
-</div>
-`;
-
-painel.innerHTML+=`
-<div style="margin-bottom:10px;">
-${d.veiculo}
-<div class="bar-bg">
-<div class="bar" style="width:${p}%"></div>
-</div>
 <small>${p}% concluído</small>
-</div>
-`;
 
+<button onclick="deletar(${i})" style="background:#ef4444;color:#fff;margin-top:5px;">
+Excluir
+</button>
+</div>`;
 });
 
 }
 
-render();
+function deletar(i){
+
+if(confirm("Excluir veículo?")){
+carros.splice(i,1);
+localStorage.setItem("globe_carros",JSON.stringify(carros));
+renderCarros();
+}
+
+}
+
+/* ================= CHECKLIST ================= */
+function getChecklist(){
+
+return {
+"FASE 1 C.A":[
+{item:"Iluminação fase/fase 2,5mm",done:false},
+{item:"Tomadas fase/fase/terra 2,5mm",done:false}
+],
+"FASE 1 C.C":[
+{item:"Iluminação 12V",done:false},
+{item:"Placa solar",done:false},
+{item:"Geladeira",done:false},
+{item:"Ar-condicionado",done:false},
+{item:"Toldo e escada",done:false}
+],
+"FASE 2":[
+{item:"Tomadas 220V/12V",done:false},
+{item:"Lâmpadas",done:false},
+{item:"Slide-out",done:false}
+],
+"FASE 3":[
+{item:"Central elétrica",done:false},
+{item:"Fusíveis",done:false},
+{item:"Inversor",done:false}
+]
+};
+
+}
+
+/* ================= PROGRESSO ================= */
+function progresso(c){
+
+let t=0,d=0;
+
+for(let f in c.checklist){
+c.checklist[f].forEach(i=>{
+t++;
+if(i.done)d++;
+});
+}
+
+return t?Math.round((d/t)*100):0;
+}
+
+/* ================= HORAS ================= */
+function atualizarSelect(){
+
+let sel=document.getElementById("carroSelect");
+sel.innerHTML="";
+
+carros.forEach(c=>{
+sel.innerHTML+=`<option>${c.veiculo}</option>`;
+});
+
+}
+
+function addHoras(){
+
+let carro=document.getElementById("carroSelect").value;
+let ele=document.getElementById("eletricista").value;
+let h=parseFloat(document.getElementById("horasInput").value);
+
+if(!carro||!h) return;
+
+horas.push({carro,ele,h});
+
+localStorage.setItem("globe_horas",JSON.stringify(horas));
+
+document.getElementById("horasInput").value="";
+
+renderHoras();
+}
+
+function renderHoras(){
+
+let div=document.getElementById("resumoHoras");
+div.innerHTML="";
+
+let mapa={};
+
+horas.forEach(h=>{
+if(!mapa[h.carro]) mapa[h.carro]=0;
+mapa[h.carro]+=h.h;
+});
+
+for(let c in mapa){
+div.innerHTML+=`
+<div class="card">
+<b>🚐 ${c}</b><br>
+<div class="barbg">
+<div class="bar" style="width:${mapa[c]*5}%"></div>
+</div>
+<small>${mapa[c]} horas totais</small>
+</div>`;
+}
+
+}
+
+show('carros');
 
 </script>
 
