@@ -124,19 +124,11 @@ return [
 "Placa solar",
 "Central elétrica",
 "Inversor",
+"boia"
+"bio"    
 "Bombas de água",
 "Teste final"
-    "Teste final"
-    "Teste final"
-    "Teste final"
-    "Teste final"
-    "Teste final"
-    "Teste final"
-    "Teste final"
-    "Teste final"
-    "Teste final"
-    "Teste final"
-    "Teste final"
+    
     
 ];
 }
