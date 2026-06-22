@@ -37,9 +37,7 @@ header{
     background:#374151;
 }
 
-.container{
-    padding:20px;
-}
+.container{ padding:20px; }
 
 .card{
     background:#fff;
@@ -63,33 +61,24 @@ input, select, button{
     cursor:pointer;
 }
 
-.vehicle:hover{
-    background:#eef2ff;
-}
-
-.hidden{display:none;}
-
-.checklist{
-    background:#f1f5f9;
-    padding:10px;
-    margin-top:10px;
-    border-radius:8px;
-}
-
-.item{display:block;margin:5px 0;}
+.vehicle:hover{ background:#eef2ff; }
 
 .barbg{height:10px;background:#e5e7eb;border-radius:5px;}
 .bar{height:10px;background:#10b981;border-radius:5px;}
+
 .status{
     font-size:12px;
     padding:3px 8px;
-    color:#fff;
     border-radius:5px;
+    color:#fff;
 }
+
 .red{background:#ef4444;}
 .yellow{background:#f59e0b;}
 .green{background:#10b981;}
 .gray{background:#6b7280;}
+
+.hidden{display:none;}
 </style>
 </head>
 
@@ -108,9 +97,17 @@ input, select, button{
 <div id="carros">
 
 <div class="card">
-<h3>Cadastrar Veículo</h3>
+<h3>Cadastro de Veículo</h3>
+
 <input id="veiculo" placeholder="Nome do veículo">
 <input id="responsavel" placeholder="Responsável">
+
+<label>Data de entrada</label>
+<input id="entrada" type="date">
+
+<label>Data de saída (prazo)</label>
+<input id="saida" type="date">
+
 <button onclick="addCar()">Salvar</button>
 </div>
 
@@ -135,7 +132,7 @@ input, select, button{
 <option>Eletricista 3</option>
 </select>
 
-<input id="horasInput" type="number" placeholder="Horas trabalhadas">
+<input id="horasInput" type="number" placeholder="Horas">
 
 <button onclick="addHoras()">Salvar</button>
 </div>
@@ -153,7 +150,6 @@ input, select, button{
 
 let carros = JSON.parse(localStorage.getItem("globe_carros")) || [];
 let horas = JSON.parse(localStorage.getItem("globe_horas")) || [];
-let atual = null;
 
 /* ================= MENU ================= */
 function show(t){
@@ -162,8 +158,8 @@ document.getElementById("horas").classList.add("hidden");
 document.getElementById(t).classList.remove("hidden");
 
 if(t==="horas") atualizarSelect();
-renderHoras();
 renderCarros();
+renderHoras();
 }
 
 /* ================= CARROS ================= */
@@ -171,8 +167,10 @@ function addCar(){
 
 let v=document.getElementById("veiculo").value.trim();
 let r=document.getElementById("responsavel").value.trim();
+let e=document.getElementById("entrada").value;
+let s=document.getElementById("saida").value;
 
-if(!v||!r) return alert("Preencha tudo");
+if(!v||!r||!e||!s) return alert("Preencha tudo");
 
 if(carros.find(c=>c.veiculo.toLowerCase()===v.toLowerCase()))
 return alert("Já existe");
@@ -180,81 +178,28 @@ return alert("Já existe");
 carros.push({
 veiculo:v,
 responsavel:r,
+entrada:e,
+saida:s,
 checklist:getChecklist()
 });
 
 localStorage.setItem("globe_carros",JSON.stringify(carros));
 
-document.getElementById("veiculo").value="";
-document.getElementById("responsavel").value="";
-
 renderCarros();
-}
-
-function renderCarros(){
-
-let div=document.getElementById("lista");
-div.innerHTML="";
-
-carros.forEach((c,i)=>{
-
-let p=progresso(c);
-
-div.innerHTML+=`
-<div class="vehicle">
-<b>🚐 ${c.veiculo}</b><br>
-<small>${c.responsavel}</small><br>
-
-<div class="barbg">
-<div class="bar" style="width:${p}%"></div>
-</div>
-
-<small>${p}% concluído</small>
-
-<button onclick="deletar(${i})" style="background:#ef4444;color:#fff;margin-top:5px;">
-Excluir
-</button>
-</div>`;
-});
 
 }
 
-function deletar(i){
+/* ================= ALERTA PRAZO ================= */
+function alertaPrazo(c){
 
-if(confirm("Excluir veículo?")){
-carros.splice(i,1);
-localStorage.setItem("globe_carros",JSON.stringify(carros));
-renderCarros();
-}
+let hoje = new Date();
+let saida = new Date(c.saida);
 
-}
+let diff = Math.ceil((saida-hoje)/(1000*60*60*24));
 
-/* ================= CHECKLIST ================= */
-function getChecklist(){
-
-return {
-"FASE 1 C.A":[
-{item:"Iluminação fase/fase 2,5mm",done:false},
-{item:"Tomadas fase/fase/terra 2,5mm",done:false}
-],
-"FASE 1 C.C":[
-{item:"Iluminação 12V",done:false},
-{item:"Placa solar",done:false},
-{item:"Geladeira",done:false},
-{item:"Ar-condicionado",done:false},
-{item:"Toldo e escada",done:false}
-],
-"FASE 2":[
-{item:"Tomadas 220V/12V",done:false},
-{item:"Lâmpadas",done:false},
-{item:"Slide-out",done:false}
-],
-"FASE 3":[
-{item:"Central elétrica",done:false},
-{item:"Fusíveis",done:false},
-{item:"Inversor",done:false}
-]
-};
+if(diff < 0) return {t:"ATRASADO",c:"red"};
+if(diff <= 2) return {t:"URGENTE",c:"yellow"};
+return {t:"NO PRAZO",c:"green"};
 
 }
 
@@ -271,6 +216,36 @@ if(i.done)d++;
 }
 
 return t?Math.round((d/t)*100):0;
+}
+
+/* ================= LISTA ================= */
+function renderCarros(){
+
+let div=document.getElementById("lista");
+div.innerHTML="";
+
+carros.forEach((c,i)=>{
+
+let p=progresso(c);
+let a=alertaPrazo(c);
+
+div.innerHTML+=`
+<div class="vehicle">
+<b>🚐 ${c.veiculo}</b><br>
+<small>${c.responsavel}</small><br>
+
+<span class="status ${a.c}">${a.t}</span>
+<span class="status gray">${p}%</span>
+
+<div class="barbg">
+<div class="bar" style="width:${p}%"></div>
+</div>
+
+<small>Entrada: ${c.entrada} | Saída: ${c.saida}</small>
+
+</div>`;
+});
+
 }
 
 /* ================= HORAS ================= */
@@ -297,9 +272,8 @@ horas.push({carro,ele,h});
 
 localStorage.setItem("globe_horas",JSON.stringify(horas));
 
-document.getElementById("horasInput").value="";
-
 renderHoras();
+
 }
 
 function renderHoras(){
@@ -310,8 +284,7 @@ div.innerHTML="";
 let mapa={};
 
 horas.forEach(h=>{
-if(!mapa[h.carro]) mapa[h.carro]=0;
-mapa[h.carro]+=h.h;
+mapa[h.carro]=(mapa[h.carro]||0)+h.h;
 });
 
 for(let c in mapa){
@@ -321,9 +294,30 @@ div.innerHTML+=`
 <div class="barbg">
 <div class="bar" style="width:${mapa[c]*5}%"></div>
 </div>
-<small>${mapa[c]} horas totais</small>
+<small>${mapa[c]} horas</small>
 </div>`;
 }
+
+}
+
+/* ================= CHECKLIST BASE ================= */
+function getChecklist(){
+
+return {
+"FASE 1":[
+{item:"Iluminação CA",done:false},
+{item:"Tomadas CA",done:false}
+],
+"FASE 2":[
+{item:"12V geral",done:false},
+{item:"Baterias",done:false},
+{item:"Solar",done:false}
+],
+"FASE 3":[
+{item:"Central elétrica",done:false},
+{item:"Inversor",done:false}
+]
+};
 
 }
 
