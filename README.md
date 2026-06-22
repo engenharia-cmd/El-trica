@@ -258,7 +258,12 @@ if(diff <= 10) return "alerta";
 return "normal";
 }
 
-/* ================= LISTA + GRÁFICOS ================= */
+/* ================= FALTANTES ================= */
+function faltam(v){
+return v.checklist.filter(i=>!i.done).length;
+}
+
+/* ================= LISTA ================= */
 function render(){
 
 let div = document.getElementById("lista");
@@ -267,10 +272,10 @@ div.innerHTML="";
 vehicles.forEach(v=>{
 
 let p = progress(v);
+let f = faltam(v);
 let status = getStatus(v);
 
 let bg = "#eef2ff";
-let aviso = "";
 
 if(status === "alerta") bg = "#fef9c3";
 if(status === "atrasado") bg = "#fee2e2";
@@ -285,7 +290,13 @@ style="background:${bg}">
 
 <canvas id="chart_${v.id}" width="80" height="80"></canvas>
 
-<br><small>${p}% concluído</small>
+<br>
+<small>${p}% concluído</small><br>
+
+<small style="color:#b91c1c;font-weight:bold">
+⛔ Faltam ${f} atividades
+</small>
+
 </div>`;
 });
 
@@ -293,7 +304,7 @@ setTimeout(drawCharts,100);
 
 }
 
-/* ================= DONUT CHART ================= */
+/* ================= DONUT ================= */
 function drawCharts(){
 
 vehicles.forEach(v=>{
