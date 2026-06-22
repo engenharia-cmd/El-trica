@@ -2,111 +2,124 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Globe ERP Oficina Elétrica</title>
+<title>ERP Elétrica Motorhome</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
-body{font-family:Arial;margin:0;background:#f4f6f9}
-header{background:#111827;color:#fff;padding:15px;font-size:18px}
-.container{padding:15px}
-
-.tabs button{
-padding:10px;margin:5px;border:0;cursor:pointer;
-background:#e5e7eb;border-radius:6px
+body{
+    font-family: Arial;
+    background:#f4f6f9;
+    margin:0;
+    padding:20px;
 }
+
+.container{
+    max-width:1100px;
+    margin:auto;
+}
+
+h1{ color:#1f2937; }
 
 .card{
-background:#fff;padding:15px;margin:10px 0;
-border-radius:10px;box-shadow:0 2px 6px rgba(0,0,0,.1)
+    background:#fff;
+    padding:15px;
+    margin-bottom:15px;
+    border-radius:10px;
+    box-shadow:0 2px 6px rgba(0,0,0,0.1);
 }
 
-input,select{
-padding:8px;margin:5px 0;width:100%;
-border-radius:6px;border:1px solid #ccc
+input, button{
+    width:100%;
+    padding:10px;
+    margin:5px 0;
 }
 
 button{
-padding:8px;background:#2563eb;color:#fff;
-border:0;border-radius:6px;cursor:pointer
+    border:none;
+    border-radius:6px;
+    cursor:pointer;
 }
 
-.progress{height:10px;background:#ddd;border-radius:10px;overflow:hidden}
-.bar{height:100%;background:green}
+.btn{
+    background:#2563eb;
+    color:#fff;
+}
 
-.alert-green{color:green;font-weight:bold}
-.alert-orange{color:orange;font-weight:bold}
-.alert-red{color:red;font-weight:bold}
+.btn:hover{ background:#1d4ed8; }
 
-.small{font-size:12px;color:#666}
+.btn-danger{
+    background:#ef4444;
+    color:#fff;
+}
+
+.btn-gray{
+    background:#6b7280;
+    color:#fff;
+}
+
+.vehicle{
+    padding:12px;
+    margin:8px 0;
+    background:#f9fafb;
+    border-left:5px solid #2563eb;
+    cursor:pointer;
+}
+
+.vehicle:hover{ background:#eef2ff; }
+
+.checklist{
+    background:#f1f5f9;
+    padding:10px;
+    border-radius:8px;
+    margin-top:10px;
+}
+
+.item{ display:block; margin:5px 0; }
+
+.hidden{ display:none; }
+
+.year-title{
+    margin-top:20px;
+    font-weight:bold;
+    color:#111827;
+}
 </style>
 </head>
 
 <body>
 
-<header>⚡ Globe ERP Oficina Elétrica</header>
-
 <div class="container">
 
-<!-- ABA BOTOES -->
-<div class="tabs">
-<button onclick="tab('dash')">Dashboard</button>
-<button onclick="tab('cars')">Veículos</button>
-<button onclick="tab('hours')">Horas</button>
-</div>
+<h1>🚐 ERP Elétrica Motorhome</h1>
 
-<!-- DASHBOARD -->
-<div id="dash" class="card">
+<!-- CADASTRO -->
+<div class="card" id="telaCadastro">
 
-<h3>📊 Produtividade Geral</h3>
-<div id="chart"></div>
+<h3>Cadastro de Veículo</h3>
 
-<hr>
+<input id="veiculo" placeholder="Nome do veículo">
+<input id="responsavel" placeholder="Responsável">
 
-<h3>🚨 Alertas Inteligentes</h3>
-<div id="alerts"></div>
+<button class="btn" onclick="salvar()">Salvar</button>
 
 </div>
 
-<!-- VEICULOS -->
-<div id="cars" class="card" style="display:none">
-
-<h3>🚐 Cadastro de Veículos</h3>
-
-<input id="cliente" placeholder="Cliente">
-<input id="modelo" placeholder="Modelo">
-<input id="os" placeholder="OS">
-<input id="entrada" type="date">
-<input id="prev" type="date">
-
-<button onclick="addCar()">Salvar Veículo</button>
-
-<hr>
-
-<input id="search" placeholder="Buscar..." oninput="renderCars()">
-
-<div id="carsList"></div>
-
+<!-- LISTA -->
+<div class="card">
+<h3>Veículos por Ano</h3>
+<div id="lista"></div>
 </div>
 
-<!-- HORAS -->
-<div id="hours" class="card" style="display:none">
+<!-- DETALHE -->
+<div class="card hidden" id="telaDetalhe">
 
-<h3>👨‍🔧 Controle de Horas</h3>
+<h3 id="tituloDetalhe"></h3>
 
-<select id="worker">
-<option>João</option>
-<option>Pedro</option>
-<option>Carlos</option>
-</select>
+<button class="btn-gray" onclick="voltar()">⬅ Voltar</button>
+<button class="btn" onclick="exportar()">📄 Exportar Relatório</button>
+<button class="btn-danger" onclick="excluirAtual()">🗑 Excluir Veículo</button>
 
-<input id="hoursValue" type="number" placeholder="Horas trabalhadas">
-<input id="task" placeholder="OS ou Veículo">
-
-<button onclick="addHours()">Salvar Horas</button>
-
-<hr>
-
-<div id="hoursList"></div>
+<div id="checklist"></div>
 
 </div>
 
@@ -114,213 +127,205 @@ border:0;border-radius:6px;cursor:pointer
 
 <script>
 
-// ================= STORAGE =================
-let cars = JSON.parse(localStorage.getItem("cars")||"[]");
-let logs = JSON.parse(localStorage.getItem("logs")||"[]");
+let dados = JSON.parse(localStorage.getItem("erp_motorhome")) || [];
 
-function save(){
-localStorage.setItem("cars",JSON.stringify(cars));
-localStorage.setItem("logs",JSON.stringify(logs));
+let atual = null;
+
+function salvar(){
+
+let v = document.getElementById("veiculo").value.trim();
+let r = document.getElementById("responsavel").value.trim();
+
+if(!v || !r){
+alert("Preencha tudo");
+return;
 }
 
-// ================= NAV =================
-function tab(t){
-dash.style.display="none";
-cars.style.display="none";
-hours.style.display="none";
-
-document.getElementById(t).style.display="block";
-
-if(t==="cars")renderCars();
-if(t==="dash")updateDashboard();
-if(t==="hours")renderHours();
+if(dados.find(x => x.veiculo.toLowerCase() === v.toLowerCase())){
+alert("Já existe esse veículo!");
+return;
 }
 
-// ================= CHECKLIST BASE =================
-const checklist = {
-CA:["Iluminação","Tomadas"],
-CC:["Iluminação CC","Aquecedor","Placa solar","Ar"],
-BAT:["Inversor","Cabos","DCDC"],
-LIG:["Lâmpadas","Teste"],
-CENT:["Fusíveis","Quadro"],
-PAINEL:["Botões","Teste final"]
+let ano = new Date().getFullYear();
+
+dados.push({
+veiculo:v,
+responsavel:r,
+ano:ano,
+checklist:getChecklistCompleto(),
+data:new Date().toLocaleString()
+});
+
+localStorage.setItem("erp_motorhome", JSON.stringify(dados));
+
+document.getElementById("veiculo").value="";
+document.getElementById("responsavel").value="";
+
+render();
+
+}
+
+// abrir veículo
+function abrir(i){
+
+atual = i;
+
+let v = dados[i];
+
+document.getElementById("telaCadastro").classList.add("hidden");
+document.getElementById("telaDetalhe").classList.remove("hidden");
+
+document.getElementById("tituloDetalhe").innerText =
+`🚐 ${v.veiculo} - ${v.responsavel}`;
+
+let html = "";
+
+for(let fase in v.checklist){
+
+html += `<div class="checklist"><b>${fase}</b>`;
+
+v.checklist[fase].forEach((c,idx)=>{
+html += `
+<label class="item">
+<input type="checkbox" ${c.done?"checked":""}
+onchange="toggle(${i},'${fase}',${idx})">
+${c.item}
+</label>
+`;
+});
+
+html += `</div>`;
+}
+
+document.getElementById("checklist").innerHTML = html;
+
+}
+
+// toggle
+function toggle(i,fase,idx){
+
+dados[i].checklist[fase][idx].done =
+!dados[i].checklist[fase][idx].done;
+
+localStorage.setItem("erp_motorhome", JSON.stringify(dados));
+
+abrir(i);
+
+}
+
+// voltar
+function voltar(){
+document.getElementById("telaCadastro").classList.remove("hidden");
+document.getElementById("telaDetalhe").classList.add("hidden");
+render();
+}
+
+// excluir veículo
+function excluirAtual(){
+
+if(confirm("Deseja excluir este veículo?")){
+
+dados.splice(atual,1);
+localStorage.setItem("erp_motorhome", JSON.stringify(dados));
+
+voltar();
+}
+}
+
+// exportar relatório
+function exportar(){
+
+let v = dados[atual];
+
+let texto = `
+RELATÓRIO ELÉTRICO MOTORHOME
+
+Veículo: ${v.veiculo}
+Responsável: ${v.responsavel}
+Ano: ${v.ano}
+Data: ${v.data}
+
+-----------------------
+
+`;
+
+for(let f in v.checklist){
+texto += `\n${f}\n`;
+
+v.checklist[f].forEach(i=>{
+texto += `[${i.done?"X":" "}] ${i.item}\n`;
+});
+}
+
+let blob = new Blob([texto], {type:"text/plain"});
+let link = document.createElement("a");
+
+link.href = URL.createObjectURL(blob);
+link.download = v.veiculo+"_relatorio.txt";
+link.click();
+
+}
+
+// lista por ano
+function render(){
+
+let div = document.getElementById("lista");
+div.innerHTML="";
+
+let anos = {};
+
+dados.forEach((d,i)=>{
+if(!anos[d.ano]) anos[d.ano]=[];
+anos[d.ano].push({d,i});
+});
+
+for(let ano in anos){
+
+div.innerHTML += `<div class="year-title">📅 ${ano}</div>`;
+
+anos[ano].forEach(obj=>{
+div.innerHTML += `
+<div class="vehicle" onclick="abrir(${obj.i})">
+<b>🚐 ${obj.d.veiculo}</b><br>
+<small>👤 ${obj.d.responsavel}</small>
+</div>
+`;
+});
+
+}
+
+}
+
+// checklist base completo
+function getChecklistCompleto(){
+
+return {
+"FASE 1 - C.A":[
+{item:"Iluminação fase/fase 2,5mm",done:false},
+{item:"Tomadas fase/fase/terra 2,5mm",done:false}
+],
+
+"FASE 1 - C.C":[
+{item:"Iluminação 12V",done:false},
+{item:"Aquecedor passagem",done:false},
+{item:"Placa solar",done:false},
+{item:"Ar-condicionado",done:false},
+{item:"Toldo e escada",done:false},
+{item:"Geladeira",done:false}
+],
+
+"FASE 3":[
+{item:"Organização cabos",done:false},
+{item:"Baterias",done:false},
+{item:"Inversor",done:false},
+{item:"Fusíveis",done:false}
+]
+
 };
 
-// ================= VEICULOS =================
-function addCar(){
-
-if(!cliente.value || !modelo.value || !os.value){
-alert("Preencha todos os campos");
-return;
 }
 
-// anti duplicação
-let dup = cars.find(c => c.os === os.value);
-if(dup){
-alert("Já existe este veículo!");
-return;
-}
-
-cars.push({
-id:Date.now(),
-cliente:cliente.value,
-modelo:modelo.value,
-os:os.value,
-entrada:entrada.value,
-prev:prev.value,
-check:{}
-});
-
-save();
-renderCars();
-}
-
-// ================= PROGRESS =================
-function progress(c){
-
-let total=0,done=0;
-
-Object.values(checklist).forEach(f=>{
-total+=f.length;
-f.forEach(i=>{
-if(c.check[i])done++;
-});
-});
-
-return total?Math.round((done/total)*100):0;
-}
-
-// ================= ALERTAS =================
-function alertStatus(c){
-
-let p = progress(c);
-let today = new Date();
-let prev = new Date(c.prev);
-
-if(p<30 && today>prev) return "🔴 CRÍTICO";
-if(p<70 && today>prev) return "🟠 ATRASO";
-if(p<70) return "🟡 EM ANDAMENTO";
-return "🟢 NO PRAZO";
-}
-
-// ================= RENDER CARROS =================
-function renderCars(){
-
-let s = search.value?.toLowerCase()||"";
-carsList.innerHTML="";
-
-cars
-.filter(c=>c.cliente.toLowerCase().includes(s)||c.modelo.toLowerCase().includes(s))
-.forEach(c=>{
-
-carsList.innerHTML+=`
-<div class="card">
-<b>${c.cliente} - ${c.modelo}</b><br>
-OS: ${c.os}<br>
-
-<span class="small">${alertStatus(c)}</span>
-
-<div class="progress">
-<div class="bar" style="width:${progress(c)}%"></div>
-</div>
-
-${progress(c)}%
-
-</div>
-`;
-});
-}
-
-// ================= HORAS =================
-function addHours(){
-
-logs.push({
-worker:worker.value,
-hours:Number(hoursValue.value),
-task:task.value,
-date:new Date()
-});
-
-save();
-renderHours();
-updateDashboard();
-}
-
-// ================= RENDER HORAS =================
-function renderHours(){
-
-hoursList.innerHTML="";
-
-logs.slice(-10).forEach(l=>{
-hoursList.innerHTML+=`
-<div class="small">
-${l.worker} - ${l.hours}h - ${l.task}
-</div>
-`;
-});
-}
-
-// ================= PRODUTIVIDADE =================
-function productivity(){
-
-let map={};
-
-logs.forEach(l=>{
-map[l.worker]=(map[l.worker]||0)+l.hours;
-});
-
-return map;
-}
-
-// ================= ALERTAS =================
-function alerts(){
-
-let p = productivity();
-let out=[];
-
-for(let w in p){
-if(p[w]<20) out.push(`🔴 ${w} baixa produtividade`);
-else if(p[w]<40) out.push(`🟠 ${w} média produtividade`);
-else out.push(`🟢 ${w} alta produtividade`);
-}
-
-return out;
-}
-
-// ================= DASHBOARD =================
-function updateDashboard(){
-
-// gráficos simples
-let data = productivity();
-
-chart.innerHTML="";
-
-for(let w in data){
-
-let bar = Math.min(data[w]*2,100);
-
-chart.innerHTML+=`
-<div>
-<b>${w}</b> - ${data[w]}h
-<div class="progress">
-<div class="bar" style="width:${bar}%"></div>
-</div>
-</div>
-`;
-}
-
-// alerts
-alertsBox.innerHTML = alerts().map(a=>{
-let color =
-a.includes("🟢")?"alert-green":
-a.includes("🟠")?"alert-orange":"alert-red";
-
-return `<div class="${color}">${a}</div>`;
-}).join("");
-}
-
-// ================= INIT =================
-updateDashboard();
+render();
 
 </script>
 
